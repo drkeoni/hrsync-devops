@@ -1,0 +1,5 @@
+#!/bin/bash
+user=jon
+name=hrsync-server
+public_ip=$(aws ec2 describe-instances --filter Name=tag:Name,Values=${name} --output text | grep '^INSTANCES' | awk '{print $15}')
+ssh ${user}@${public_ip}

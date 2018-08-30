@@ -1,0 +1,3 @@
+#!/bin/bash
+name=hrsync-server
+aws ec2 describe-instances --filter Name=tag:Name,Values=${name} --output text

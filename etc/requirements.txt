@@ -1,0 +1,5 @@
+ipython
+
+awscli
+fabric3
+boto3
