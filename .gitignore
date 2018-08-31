@@ -1,5 +1,8 @@
 logs/
 ve/
 
+__pycache__/
+
 *.out
 .*.swp
+.server.json

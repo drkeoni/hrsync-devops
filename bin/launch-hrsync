@@ -1,4 +1,0 @@
-#!/bin/bash
-name=hrsync-server
-instance=$(aws ec2 describe-instances --filter Name=tag:Name,Values=${name} --output text | grep '^INSTANCES' | awk '{print $8}')
-aws ec2 start-instances --instance-ids $instance

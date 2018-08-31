@@ -1,5 +1,5 @@
 ipython
 
 awscli
-fabric3
+Fabric
 boto3
