@@ -1,0 +1,5 @@
+#!/bin/bash
+service nginx start
+cd /opt/hrsync && \
+  . etc/setup_local.bash && \
+  run-hrsync

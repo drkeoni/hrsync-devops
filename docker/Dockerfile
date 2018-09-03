@@ -15,5 +15,9 @@ RUN ln -s /etc/nginx/sites-available/hrsync /etc/nginx/sites-enabled/hrsync && \
     rm /etc/nginx/sites-enabled/default && \
     mkdir -p /opt/log/nginx
 
+COPY bin/start-hrsync-server /usr/local/bin
+
 EXPOSE 80
 VOLUME ["/opt/log/hrsync"]
+
+CMD ["/usr/local/bin/start-hrsync-server"]
