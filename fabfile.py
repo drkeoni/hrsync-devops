@@ -1,4 +1,3 @@
-import sys
 import os
 import json
 import datetime as dt
@@ -7,6 +6,16 @@ import time
 
 import boto3
 from fabric import task
+
+__doc__ = """Fabfile for controlling major tasks in the hrsync-server lifecycle.
+Run `lfab --list` to see the list of available tasks.
+
+  * start-instance
+  * stop-instance
+  * reroute-dns
+  * docker-pull
+
+"""
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 PYBIN_PATH = os.path.join(ROOT, 've/bin')
@@ -31,7 +40,7 @@ def json_serial(obj):
     """JSON serializer for objects not serializable by default json code"""
     if isinstance(obj, (dt.datetime, dt.date)):
         return obj.isoformat()
-    raise TypeError ("Type %s not serializable" % type(obj))
+    raise TypeError("Type %s not serializable" % type(obj))
 
 
 def server_data_is_stale():
@@ -58,7 +67,7 @@ def get_aws_config(force_refresh=False):
         data['hosted_zone_id'] = dns_client.list_hosted_zones_by_name(DNSName=DNS_NAME)['HostedZones'][0]['Id']
         ecr_client = boto3.client('ecr')
         repos = ecr_client.describe_repositories()
-        repo_info = [r for r in repos['repositories'] if r['repositoryName']==REPO_NAME][0]
+        repo_info = [r for r in repos['repositories'] if r['repositoryName'] == REPO_NAME][0]
         data['repo_uri'] = repo_info['repositoryUri']
         with open(SERVER_DATA_FILE, 'w') as outfile:
             outfile.write(json.dumps(data, indent=4, sort_keys=True) + os.linesep)
@@ -105,7 +114,7 @@ def reroute_dns(c):
     dns_client = boto3.client('route53')
     log.info('Changing A record for {} to point to {}'.format(PUBLIC_NAME, aws_data['public_ip']))
     change_request = {
-        'Comment' : 'rerouting {}'.format(PUBLIC_NAME),
+        'Comment': 'rerouting {}'.format(PUBLIC_NAME),
         'Changes': [
             {
                 'Action': 'UPSERT',
@@ -114,11 +123,11 @@ def reroute_dns(c):
                     'Type': 'A',
                     'TTL': 300,
                     'ResourceRecords': [
-                        { 'Value': aws_data['public_ip'] }
+                        {'Value': aws_data['public_ip']}
                     ]
                 }
             }]
-    } 
+    }
     response = dns_client.change_resource_record_sets(
         HostedZoneId=aws_data['hosted_zone_id'],
         ChangeBatch=change_request
@@ -130,11 +139,6 @@ def reroute_dns(c):
 def docker_pull(c):
     aws_data = get_aws_config()
     cmd0 = c.local('{}/aws ecr get-login'.format(PYBIN_PATH))
-    login_cmd = cmd0.stdout.replace('-e none','')
+    login_cmd = cmd0.stdout.replace('-e none', '')
     c.sudo(login_cmd)
     c.sudo('docker pull {}:latest'.format(aws_data['repo_uri']))
-
-
-@task
-def hello(c):
-    c.local('echo "hello"')
