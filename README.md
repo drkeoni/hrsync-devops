@@ -14,10 +14,22 @@ make setup
 
 Start the EC2 instance:
 ```
-lfab launch-instance
+lfab start-instance
 ```
 
 Keep DNS up to date:
 ```
 lfab reroute-dns
 ```
+
+Pull latest docker image onto server:
+```
+rfab docker-pull
+```
+
+Stop the EC2 instance:
+```
+lfab stop-instance
+```
+
+(n.b. use `lfab` for local commands and `rfab` for remote commands)
