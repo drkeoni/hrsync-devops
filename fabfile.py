@@ -9,12 +9,15 @@ import boto3
 from fabric import task
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
+PYBIN_PATH = os.path.join(ROOT, 've/bin')
 SERVER_DATA_FILE = os.path.join(ROOT, '.server.json')
-TAG_NAME = 'hrsync-server'
+
+EC2_TAG_NAME = 'hrsync-server'
 DNS_NAME = 'nasonstudios.net.'
 PUBLIC_NAME = '{}.{}'.format('hrsync', DNS_NAME.rstrip('.'))
 AWS_REGION = 'us-east-1'
 IP_TIMEOUT = 60
+REPO_NAME = 'nasonstudios/hrsync'
 
 LOG_FORMAT = "%(asctime)s %(filename)s [%(levelname)s] %(message)s"
 log = logging.getLogger(__file__)
@@ -45,7 +48,7 @@ def get_aws_config(force_refresh=False):
         data = {}
         ec2_client = boto3.client('ec2')
         instance_info = ec2_client.describe_instances(
-            Filters=[{'Name': 'tag:Name', 'Values': [TAG_NAME]}]
+            Filters=[{'Name': 'tag:Name', 'Values': [EC2_TAG_NAME]}]
         )
         instance_info = instance_info['Reservations'][0]['Instances'][0]
         data['instance_id'] = instance_info['InstanceId']
@@ -53,6 +56,10 @@ def get_aws_config(force_refresh=False):
         data['public_dns_name'] = instance_info.get('PublicDnsName', None)
         dns_client = boto3.client('route53')
         data['hosted_zone_id'] = dns_client.list_hosted_zones_by_name(DNSName=DNS_NAME)['HostedZones'][0]['Id']
+        ecr_client = boto3.client('ecr')
+        repos = ecr_client.describe_repositories()
+        repo_info = [r for r in repos['repositories'] if r['repositoryName']==REPO_NAME][0]
+        data['repo_uri'] = repo_info['repositoryUri']
         with open(SERVER_DATA_FILE, 'w') as outfile:
             outfile.write(json.dumps(data, indent=4, sort_keys=True) + os.linesep)
     with open(SERVER_DATA_FILE, 'r') as infile:
@@ -65,10 +72,18 @@ def log_response(response):
 
 
 @task
-def launch_instance(c):
+def start_instance(c):
     aws_data = get_aws_config()
     ec2_client = boto3.client('ec2')
     response = ec2_client.start_instances(InstanceIds=[aws_data['instance_id']])
+    log_response(response)
+
+
+@task
+def stop_instance(c):
+    aws_data = get_aws_config()
+    ec2_client = boto3.client('ec2')
+    response = ec2_client.stop_instances(InstanceIds=[aws_data['instance_id']])
     log_response(response)
 
 
@@ -109,6 +124,15 @@ def reroute_dns(c):
         ChangeBatch=change_request
     )
     log_response(response)
+
+
+@task
+def docker_pull(c):
+    aws_data = get_aws_config()
+    cmd0 = c.local('{}/aws ecr get-login'.format(PYBIN_PATH))
+    login_cmd = cmd0.stdout.replace('-e none','')
+    c.sudo(login_cmd)
+    c.sudo('docker pull {}:latest'.format(aws_data['repo_uri']))
 
 
 @task

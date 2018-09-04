@@ -5,10 +5,14 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
 
 WORKDIR /opt
 ARG NOCACHE=1
-RUN git clone https://github.com/drkeoni/hrsync.git
+RUN git clone https://github.com/drkeoni/hrsync.git && \
+    cd /opt/hrsync && \
+    git submodule update --init --recursive
 
 WORKDIR /opt/hrsync
 RUN make create-ve setup
+
+RUN make build-site
 
 COPY config/nginx/hrsync /etc/nginx/sites-available
 RUN ln -s /etc/nginx/sites-available/hrsync /etc/nginx/sites-enabled/hrsync && \

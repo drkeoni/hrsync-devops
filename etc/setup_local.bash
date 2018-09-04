@@ -3,7 +3,7 @@
 # source this file
 #
 
-PKG_NAME='hrsync-mgmt'
+PKG_NAME='hrsync-devops'
 
 if [ -z "$BASH" ]; then
 	echo "This file requires bash." 1>&2
